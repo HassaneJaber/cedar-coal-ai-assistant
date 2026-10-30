@@ -26,7 +26,7 @@ CALLBACK_OFFER = {
     "en": "Would you like our team to call you to talk it through before you order?",
     "fr": "Voulez-vous que l'équipe vous rappelle pour en parler avant de commander ?",
     "ar": "بتحب الفريق يتصل فيك تحكوا قبل ما تطلب؟",
-    "az": "Baddak el team yotoslo fik abel ma totlob?",
+    "az": "Baddak el team yetwasalo ma3ak abel ma totlob?",
 }
 CROSS_CONTACT = {
     "en": "Cross-contact in our kitchen cannot be ruled out.",
@@ -62,6 +62,12 @@ def turn_instructions(user):
                 "Do NOT write kitchen-allergen warnings, cross-contact statements, safety guarantees or callback offers yourself. "
                 "Do NOT ask for name, phone or contact details, or call booking/contact tools. "
                 "Callback collection starts ONLY after the customer accepts the offer in a later turn. "
+                "ARABIZI ALLERGY AMBIGUITY: wl / wel / w el / w l can mean and the, while el / l means the; wl can also be a typo for el. "
+                "Never assume the safer-for-the-restaurant reading. Be safe under BOTH readings: state dish ingredients from restaurant.md, "
+                "and never say or imply the dish is safe or recommended. For nuts plus hummus ambiguity, state its ingredients and warn "
+                "that if the customer is also allergic to hummus, they should not order it. "
+                "If the dish or allergen is genuinely unclear, ask ONE short clarifying question instead of guessing; "
+                "the application still appends its safety line and callback offer exactly once. "
                 "Ingredient facts about the asked dish are allowed, e.g. hummus has no nuts but contains tahini (sesame paste). Never guarantee safety.")
     instructions = []
     if is_dietary(user):
@@ -83,7 +89,7 @@ WARNING_PATTERNS = (
     r"\b(?:guarantee\w*|garanti\w*|nodman|nadman|nkoun akidin)\b|نضمن|ضمان",
     r"\b(?:allergens?|allergenes?)\b|مسببات الحساسية",
     r"\b(?:kitchen|cuisine|matbakh)\b.{0,200}(?:nuts|gluten|dairy|milk|sesame|noix|lait|7alib|semsom|mkassarat)|مطبخ.{0,200}(?:مكسرات|غلوتين|جلوتين|حليب|سمسم)",
-    r"\b(?:call\s+(?:you\s+)?back|callback|rappeler|rappelera|rappelle|ye7kik|bya7kik|yettesel|yotoslo)\b|(?:الفريق|فريقنا).{0,60}(?:يتصل|يحكيك|يتواصل)",
+    r"\b(?:call\s+(?:you\s+)?back|callback|rappeler|rappelera|rappelle|ye7kik|bya7kik|yettesel|yetwasalo)\b|(?:الفريق|فريقنا).{0,60}(?:يتصل|يحكيك|يتواصل)",
     r"(?:100\s*%|completely|totally|entirely)\s+safe|sans aucun risque|امن تماما|مضمون.{0,20}امن",
 )
 
@@ -153,8 +159,9 @@ def finalize_reply(user, reply, language):
         for fixed in (*SAFETY.values(), *CALLBACK_OFFER.values()):
             reply = reply.replace(fixed, "")
         body = remove_safety_sentences(reply)
-        body = remove_contact_requests(body)
+        body = strip_unneeded_apology(remove_contact_requests(body))
         return "\n\n".join(part for part in (body, SAFETY[language], CALLBACK_OFFER[language]) if part)
+    reply = strip_unneeded_apology(reply)
     dietary = is_dietary(user)
     if dietary:
         reply = remove_safety_sentences(reply)
@@ -186,7 +193,7 @@ ARABIZI_MONTHS = ["Kenoun tene","Chbat","Azar","Nisan","Ayyar","Hzayran","Tammou
 def local_wording(reply, language):
     replacements = {
         'ar': {'طماطم':'بندورة','ثوم':'توم','مخلل':'كبيس','الحين':'هلّق'},
-        'az': {'ghir':'gher','kharej men Beirut':'bara Beirut','ma fi wala shi':'ma fi shi'},
+        'az': {'ghir':'gher','kharej men Beirut':'bara Beirut','ma fi wala shi':'ma fi shi','yotoslo fik':'yetwasalo ma3ak','yotoslo':'yetwasalo'},
     }.get(language,{})
     for original, replacement in replacements.items():
         reply = re.sub(r'(?<!\w)'+re.escape(original)+r'(?!\w)', replacement, reply, flags=re.I)
@@ -207,3 +214,25 @@ def local_wording(reply, language):
                            lambda m: ascii_digits(m[1])+'/'+str(month),reply,flags=re.I)
             reply = re.sub(r'(?<!\w)(في\s+|بشهر\s+|شهر\s+)'+pattern+r'(?!\w)', lambda m: m[1]+str(month),reply,flags=re.I)
     return reply
+
+
+def strip_unneeded_apology(reply):
+    """A negative ingredient fact is not a refusal of a restaurant service."""
+    opener=re.match(r"^\s*(?:Be3tezer|بعتذر|Sorry|D[eé]sol[eé]e?)\b[\s,،.!:;؛…—-]*",reply,re.I)
+    if not opener:
+        return reply
+    body=reply[opener.end():].strip()
+    text=normalized(body)
+    # Remove negative ingredient facts before checking for actual unavailability.
+    ingredients=r"(?:nuts|peanuts|gluten|dairy|milk|sesame|traces|mkasarat|mokasarat|mkassarat|7alib|semsom|noix|lait|sesame|مكسرات|غلوتين|حليب|سمسم)"
+    text=re.sub(r"\b(?:no|ma fi|pas de|sans|don't have|do not have|doesn't have)\s+"+ingredients+r"\b","",text)
+    text=re.sub(r"(?:ما في|ما عنا|بلا)\s*"+ingredients,"",text)
+    refusal=any(re.search(pattern,text) for pattern in (
+        r"\b(?:unavailable|not available|not offered|out of stock|sold out|closed)\b",
+        r"\b(?:we |i )?(?:don't|do not|can't|cannot)\s+(?:deliver|offer|provide|serve|accept|book|help|have|take)\b",
+        r"\bno\s+(?:delivery|parking|argileh|arguileh|shisha|tables?|bookings?|availability)\b|^no[,.!؟?]?(?:\s|$)",
+        r"\bma\s+(?:mnwasel|mnewasel|mnwassel|bnewasel|mna3mel|fina nwasel)\b|\bma fi\s+\w+|\bmsakrin\b|^la(?:\s|[,.!]|$)",
+        r"\b(?:pas disponible|indisponible|ferme|ne (?:livrons|livre|proposons|propose|offrons|offre|servons|sert|faisons|fait|pouvons|peut) pas|n'avons pas|pas de livraison)\b|^non(?:\s|[,.!]|$)",
+        r"ما\s+(?:منوصل|منوصّل|منقدم|منقدّم|فينا نوصل)|(?:مش|غير)\s+(?:متوفر|متاحة|متاح)|ما\s+(?:في|عنا)\s+\S+|مسكرين|مغلق|^لا(?:\s|[،,.!]|$)",
+    ))
+    return reply if refusal else body

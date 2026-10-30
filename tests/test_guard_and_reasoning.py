@@ -44,7 +44,7 @@ class GuardTests(unittest.IsolatedAsyncioTestCase):
                 self.assertFalse(is_large_group_booking(phrase))
         provider = SimpleNamespace(complete=AsyncMock(return_value=ChatCompletionMessage(role="assistant", content="What is your name?")))
         bot = Assistant(provider, dry_run=True)
-        self.assertEqual(await bot.reply("Book for ten people"), "What\'s your name?")
+        self.assertEqual(await bot.reply("Book for ten people"), "Sure! Under what name?")
         provider.complete.assert_not_awaited()
 
     async def test_name_followup_retains_group_context_and_handoff(self):

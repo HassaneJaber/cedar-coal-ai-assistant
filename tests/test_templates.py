@@ -9,10 +9,10 @@ from booking_state import REQUIRED
 from phone_utils import PHONE_ERRORS
 
 EXPECTED = {
-    "en": ["What's your name?", "What's your phone number?", "Which day would you like to come?", "What time?", "How many people?", "Inside or on the terrace?"],
-    "ar": ["شو اسمك؟", "شو رقم التلفون؟", "أي يوم بدك تجي؟", "أي ساعة؟", "قديش شخص؟", "جوّا ولا عالتراس؟"],
-    "az": ["Shu esmak?", "Shu ra2m el telefone?", "Ayya yom baddak teje?", "Ayya se3a?", "Addesh shakhes?", "Jowwa wala 3al terrace?"],
-    "fr": ["Quel est votre nom ?", "Quel est votre numéro de téléphone ?", "Pour quel jour ?", "À quelle heure ?", "Pour combien de personnes ?", "À l'intérieur ou en terrasse ?"],
+    "en": ["Sure! Under what name?", "What's your phone number?", "Which day would you like to come?", "What time?", "How many people?", "Inside or on the terrace?"],
+    "ar": ["أكيد، بإسم مين؟", "شو رقم التلفون؟", "أي يوم بدك تجي؟", "أي ساعة؟", "قديش شخص؟", "جوّا ولا عالتراس؟"],
+    "az": ["Akeed, bi esm min?", "Shu ra2m el telefone?", "Ayya yom baddak teje?", "Ayya se3a?", "Addesh shakhes?", "Jowwa wala 3al terrace?"],
+    "fr": ["Bien sûr ! À quel nom ?", "Quel est votre numéro de téléphone ?", "Pour quel jour ?", "À quelle heure ?", "Pour combien de personnes ?", "À l'intérieur ou en terrasse ?"],
 }
 SAVED = {
     "en": "Your booking is confirmed! Thank you.",

@@ -2,6 +2,8 @@
 import re
 import unicodedata
 from datetime import datetime, timedelta
+from pathlib import Path
+from zoneinfo import ZoneInfo
 from booking_guard import NUMBER_WORDS, normalize
 from phone_utils import normalize_phone, is_phone_input, compact_phone, PHONE_ERRORS
 
@@ -19,6 +21,46 @@ QUESTIONS = {
     'az': ["Shu esmak?", "Shu ra2m el telefone?", "Ayya yom baddak teje?", "Ayya se3a?", "Addesh shakhes?", "Jowwa wala 3al terrace?"],
     'fr': ["Quel est votre nom ?", "Quel est votre numéro de téléphone ?", "Pour quel jour ?", "À quelle heure ?", "Pour combien de personnes ?", "À l'intérieur ou en terrasse ?"],
 }
+
+BOOKING_NAME_QUESTIONS = {
+    'az': "Akeed, bi esm min?", 'ar': "أكيد، بإسم مين؟",
+    'en': "Sure! Under what name?", 'fr': "Bien sûr ! À quel nom ?",
+}
+RELATIVE_DAYS = {}
+for offset, phrases in {
+    0: ['today','tonight','lyom','el yom','elyom','l yom','el leile','lleile','اليوم','الليلة','aujourdhui','aujourd hui'],
+    1: ['tomorrow','bokra','bkra','bukra','boukra','bokrah','بكرا','بكرة','غدا','demain'],
+    2: ['day after tomorrow','ba3d bokra','ba3ed bokra','ba3d bkra','بعد بكرا','بعد بكرة','apres demain'],
+}.items():
+    RELATIVE_DAYS.update({normalize(phrase):offset for phrase in phrases})
+WEEKDAYS = {}
+for day, phrases in enumerate([
+    ['monday','lundi','tanen','itnen','el tanen','الاثنين','التنين'],
+    ['tuesday','mardi','talata','tlata','الثلاثاء','التلاتا'],
+    ['wednesday','mercredi','arb3a','arbe3a','arba3a','الأربعاء','الأربعا'],
+    ['thursday','jeudi','khamis','5amis','الخميس'],
+    ['friday','vendredi','jem3a','jom3a','jam3a','الجمعة'],
+    ['saturday','samedi','sabet','sabt','السبت'],
+    ['sunday','dimanche','a7ad','ahad','el a7ad','الأحد'],
+]):
+    WEEKDAYS.update({normalize(phrase):day for phrase in phrases})
+DATE_PATTERN = re.compile(r"(?<!\w)(?:"+"|".join(
+    re.escape(phrase) for phrase in sorted(set(RELATIVE_DAYS)|set(WEEKDAYS),key=len,reverse=True)
+)+r")(?!\w)")
+
+
+def find_date_phrase(text, party_expected=False):
+    for match in DATE_PATTERN.finditer(text):
+        phrase=match[0]
+        # Some weekday spellings also mean a number of guests.
+        if phrase in NUMBER_WORDS:
+            before=text[:match.start()]
+            after=text[match.end():]
+            if (party_expected and phrase==text) or re.search(r"\b(?:la|for|pour)\s*$",before) or re.match(r"\s+(?:ashkhas|shakhes|people|guests|persons|personnes|اشخاص|شخص)\b",after):
+                continue
+        return phrase
+    return None
+
 
 
 def ascii_digits(text):
@@ -41,14 +83,14 @@ def detect_language(text):
         return None
     if re.fullmatch(r'[+\d\s():/.-]+',text.strip()):
         return None
-    if normalized in {'السبت','يوم السبت','الاحد','يوم الاحد','الاثنين','الثلاثاء','الاربعاء','الخميس','الجمعة'}:
+    if normalized in WEEKDAYS or normalized in {'يوم السبت','يوم الاحد'}:
         return None
     if re.search(r'\b(بدي|بدنا|شو|عندي|عندكن|احجز|حجز|اريد|اكل|بدون|جلوتين|غلوتين|سعر|خليهن|بكرا|الساعة|السبت|حساسية|في|قديش|فيك|ليش|لا)\b|عالتراس|توصيل',normalized):
         return 'ar'
     tokens = re.findall(r'[a-z0-9]+',text.lower())
     if any(not re.fullmatch(r'\d+(?:am|pm)',token) and re.search(r'(?:[a-z]+[23578]|[23578][a-z]+)',token) for token in tokens):
         return 'az'
-    if re.search(r'\b(badde|baddi|bokra|bukra|tawle|ashkhas|khames|shu|fi|la2|eh|tamam|ya3ne|addesh|fiyye|hajez|nehna|ehjoz|nabati|hasasiye)\b',normalized):
+    if re.search(r'\b(badde|baddi|bokra|bkra|bukra|boukra|bokrah|tawle|ashkhas|khames|shu|fi|la2|eh|tamam|ya3ne|addesh|fiyye|hajez|nehna|ehjoz|nabati|hasasiye)\b',normalized):
         return 'az'
     if re.search(r'\b(je|vous|bonjour|salut|reserver|reservation|personnes|pour|combien|livrez|livraison|allergique|allergie|vegetarien|vegetalien|sans|merci)\b',normalized):
         return 'fr'
@@ -70,22 +112,33 @@ def bounds(day, knowledge):
     return oh*60+om,kh*60+km
 
 
-def resolve_date(value,current):
+def resolve_date(value,current,knowledge=None,time_value=None):
+    if current.tzinfo is not None:
+        current=current.astimezone(ZoneInfo("Asia/Beirut"))
     raw = ascii_digits(value).strip()
     text = normalize(raw)
-    if text in {'tomorrow','bokra','bukra','بكرا','غدا','demain'}:
-        day = current.date()+timedelta(days=1)
-    elif text in {'today','اليوم','lyom','aujourdhui'}:
-        day = current.date()
+    if text in RELATIVE_DAYS:
+        day=current.date()+timedelta(days=RELATIVE_DAYS[text])
     else:
-        weekdays = {'monday':0,'الاثنين':0,'lundi':0,'tuesday':1,'الثلاثاء':1,'mardi':1,'wednesday':2,'الاربعاء':2,'mercredi':2,'thursday':3,'الخميس':3,'jeudi':3,'friday':4,'الجمعة':4,'vendredi':4,'saturday':5,'السبت':5,'samedi':5,'sunday':6,'الاحد':6,'dimanche':6}
-        key = next((key for key in weekdays if re.search(r'\b'+key+r'\b',text)),None)
-        if key:
-            day = current.date()+timedelta(days=(weekdays[key]-current.weekday())%7)
+        key=find_date_phrase(text)
+        if key in WEEKDAYS:
+            day=current.date()+timedelta(days=(WEEKDAYS[key]-current.weekday())%7)
+            if day==current.date():
+                if knowledge is None:
+                    knowledge=(Path(__file__).resolve().parent/'knowledge/restaurant.md').read_text('utf-8')
+                _,last_order=bounds(day,knowledge)
+                passed=current.hour*60+current.minute>=last_order
+                if not passed and time_value is not None:
+                    try:
+                        resolve_time(time_value,day.isoformat(),current,knowledge)
+                    except ValueError as exc:
+                        passed=str(exc)=='Choose a future booking time.'
+                if passed:
+                    day+=timedelta(days=7)
         else:
             if not re.fullmatch(r'\d{4}-\d{2}-\d{2}',raw):
                 raise ValueError('Use a date within the next 30 days.')
-            day = datetime.strptime(raw,'%Y-%m-%d').date()
+            day=datetime.strptime(raw,'%Y-%m-%d').date()
     if not current.date() <= day <= current.date()+timedelta(days=30):
         raise ValueError('Choose today or a date within the next 30 days.')
     return day.isoformat()
@@ -128,7 +181,7 @@ def update_draft(draft,values,current,knowledge,old_errors=None):
             elif field == 'phone':
                 value = normalize_phone(value)
             elif field == 'date':
-                value = resolve_date(value,current)
+                value = resolve_date(value,current,knowledge,values.get("time",draft.get("time")))
             elif field == 'time':
                 # Validate times after any date update, independent of tool-argument order.
                 continue
@@ -182,9 +235,9 @@ def extract_details(user,draft,current):
     if date_match:
         result['date']=date_match[0]
     else:
-        date_match = re.search(r'\b(tomorrow|today|bokra|bukra|demain|بكرا|اليوم|غدا|monday|tuesday|wednesday|thursday|friday|saturday|sunday|الاثنين|الثلاثاء|الاربعاء|الخميس|الجمعة|السبت|الاحد|lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche)\b',text)
-        if date_match:
-            result['date']=date_match[0]
+        date_phrase=find_date_phrase(text,next_field(draft,{})=='party_size')
+        if date_phrase:
+            result['date']=date_phrase
     time_match = re.search(r'(?:\b(?:at|3al|3a)|الساعة|الساعه)\s*(\d{1,2}(?::\d{2})?\s*(?:am|pm)?)(?!\d)',raw,re.I)
     if not time_match:
         time_match = re.search(r'\b(\d{1,2}:\d{2}\s*(?:am|pm)?|\d{1,2}\s*(?:am|pm))\b',raw,re.I)
@@ -214,7 +267,7 @@ def extract_details(user,draft,current):
 
 
 FIELD_WORDS = {
-    'name':r'\b(name|nom|esmak|esmek|esem|ismak)\b|اسمك|الاسم',
+    'name':r'\b(name|nom|esmak|esmek|esem|esm|ismak)\b|اسمك|الاسم|باسم\s+مين',
     'phone':r'\b(phone|telephone|telefone|telephonak|telephon|ra2m|ra2mak|numero)\b|تلفون|هاتف|رقم',
     'date':r'\b(date|day|nhar|tarikh|yom|jour)\b|نهار|تاريخ|يوم',
     'time':r'\b(time|heure|se3a)\b|ساعة|وقت',
@@ -252,7 +305,7 @@ def safe_reply(language,draft,errors):
         return PHONE_ERRORS[language]
     field=next_field(draft,errors)
     if field:
-        return QUESTIONS[language][REQUIRED.index(field)]
+        return BOOKING_NAME_QUESTIONS[language] if field == "name" else QUESTIONS[language][REQUIRED.index(field)]
     return {'en':'Which detail would you like to change?', 'ar':'أي تفصيل بدك تغيّره؟','az':'Ay tafsil baddak tghayyer?','fr':'Quel détail souhaitez-vous modifier ?'}[language]
 
 
@@ -267,7 +320,7 @@ je voudrais veux reserver une un pour a en le la les demain aujourd hui personne
 لا خليهن غير بدل شخص اشخاص اكيد تمام نعم
 monday tuesday wednesday thursday friday saturday sunday
 lundi mardi mercredi jeudi vendredi samedi dimanche
-الاثنين الثلاثاء الاربعاء الخميس الجمعة السبت الاحد""").split()) | set(NUMBER_WORDS)
+الاثنين الثلاثاء الاربعاء الخميس الجمعة السبت الاحد""").split()) | set(NUMBER_WORDS) | {word for phrase in set(RELATIVE_DAYS)|set(WEEKDAYS) for word in phrase.split()}
 
 
 def routine_booking_turn(user, details):
@@ -294,5 +347,5 @@ def fixed_field_question(reply, language, draft, errors):
     if len(re.split(r'[.!\n]',text)) == 1 and (text.endswith('?') or text.endswith('؟')):
         question = normalize(text)
         if not re.search(r"\b(menu|parking|delivery|allerg|hummus|price|cost|gluten)\w*|حساسية|منيو|توصيل",question):
-            return QUESTIONS[language][REQUIRED.index(field)]
+            return BOOKING_NAME_QUESTIONS[language] if field == "name" else QUESTIONS[language][REQUIRED.index(field)]
     return reply

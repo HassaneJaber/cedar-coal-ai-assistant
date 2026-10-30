@@ -99,7 +99,7 @@ class SafetyTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn("Tabbouleh, fattoush, kibbeh, sambousek and fatayer contain gluten", prompt)
         self.assertIn("ALWAYS include", prompt)
         self.assertIn("NEVER offer a callback for unrelated topics", prompt)
-        self.assertEqual(ARABIZI_EXAMPLES.count("Q:"), 8)
+        self.assertEqual(ARABIZI_EXAMPLES.count("Q:"), 9)
         self.assertNotRegex(SAFETY['az'] + CROSS_CONTACT['az'], r"[\u0600-\u06ff]")
 
     async def test_medium_default_explicit_effort_and_judge_grounding(self):

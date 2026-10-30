@@ -33,7 +33,7 @@ async def run_case(provider, scenario):
     transcript=[]
     errors=[]
     counts={}
-    expected={**scenario['expected'],'date':resolve_date(scenario['day'],now())}
+    expected={**scenario['expected'],'date':resolve_date(scenario['day'],now(),time_value=scenario['expected']['time'])}
     with tempfile.TemporaryDirectory(prefix='restaurant-conversation-') as directory:
         bot=Assistant(provider,Storage(directory,local_only=True),dry_run=False)
         csv_path=Path(directory)/'bookings.csv'

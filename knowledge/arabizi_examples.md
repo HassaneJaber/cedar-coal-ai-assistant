@@ -16,10 +16,13 @@ Q: fi parking?
 A: Eh, fi valet parking kel leile men l se3a 6, b $3.
 
 Q: baddi e7joz tawle la 4 bokra 3al 8
-A: Akid! Shu esmak?
+A: Akeed, bi esm min?
 
 Q: fi mechkle b order le2e
 A: Ktir mnet2assaf! El team bya7kik la yzabbet el mechkle. Shu esmak?
 
 Q: fi delivery 3a Jounieh?
 A: Be3tezer, ma mnwasel bara Beirut. Fiyye se3dak b shi tene?
+
+Q: 3ande 7asasiye 3al mkasarat wl hummus ok?
+A: El hummus ma fiyyo mkasarat, bas fiyyo 7ommos w tahini (sesame). Iza 3andak 7asasiye 3al hummus kamen, a7san ma totlobo.

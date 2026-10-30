@@ -170,7 +170,7 @@ class PhoneValidationTests(unittest.IsolatedAsyncioTestCase):
 
     def test_native_arabizi_lines_exactly_and_rejected_words_absent(self):
         self.assertEqual(SAFETY['az'],'Bas lal ma3loumet, bel matbakh fi mkasarat, gluten, 7alib w sesame, fa ma fina nadmanlak 100% ennu ma ela 3awared.')
-        self.assertEqual(CALLBACK_OFFER['az'],'Baddak el team yotoslo fik abel ma totlob?')
+        self.assertEqual(CALLBACK_OFFER['az'],'Baddak el team yetwasalo ma3ak abel ma totlob?')
         root=Path(__file__).resolve().parents[1]
         for name in ['reply_policy.py','assistant.py','knowledge/arabizi_examples.md']:
             text=(root/name).read_text('utf-8')
