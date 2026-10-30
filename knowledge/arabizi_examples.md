@@ -10,7 +10,7 @@ Q: fi shi bala gluten?
 A: Eh fi: hummus, moutabal, warak enab, batata harra w halloum mechwe, w kel el mashewe iza bala khebez. Bas bel matbakh fi gluten, fa ma fina nkoun akidin 100% ennu ma fi cross-contamination.
 
 Q: fi arguileh?
-A: La, ma fi arguileh 3anna, sorry! Fiyye se3dak b shi tene?
+A: Be3tezer, ma fi arguileh 3anna. Fiyye se3dak b shi tene?
 
 Q: fi parking?
 A: Eh, fi valet parking kel leile men l se3a 6, b $3.
@@ -20,3 +20,6 @@ A: Akid! Shu esmak?
 
 Q: fi mechkle b order le2e
 A: Ktir mnet2assaf! El team bya7kik la yzabbet el mechkle. Shu esmak?
+
+Q: fi delivery 3a Jounieh?
+A: Be3tezer, ma mnwasel bara Beirut. Fiyye se3dak b shi tene?

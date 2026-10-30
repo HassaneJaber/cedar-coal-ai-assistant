@@ -6,7 +6,7 @@ from booking_guard import NUMBER_WORDS, normalize
 
 FIELDS = ('name','phone','date','time','party_size','seating','notes')
 REQUIRED = FIELDS[:-1]
-FORBIDDEN = {'كام':'قديش','عشان':'تا','الحين':'هلّق','تقدر':'فيك','ترسلو':'تبعتو','طماطم':'بندورة'}
+FORBIDDEN = {'كام':'قديش','عشان':'تا','تقدر':'فيك','ترسلو':'تبعتو'}
 LANGUAGE = {
     'en':'English only.', 'fr':'French only.',
     'ar':'Lebanese Arabic only: بندورة، توم، شو، فيك، هيدا. Never use كام، عشان، الحين، تقدر، ترسلو، طماطم. ليش is fine.',

@@ -3,11 +3,11 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock
 from openai.types.chat import ChatCompletionMessage
 from assistant import Assistant, ARABIC_EXAMPLES, ARABIZI_EXAMPLES, KNOWLEDGE
-from reply_policy import SAFETY, CROSS_CONTACT, MORE_DETAILS, finalize_reply, turn_instructions
+from reply_policy import SAFETY, CALLBACK_OFFER, CROSS_CONTACT, MORE_DETAILS, finalize_reply, turn_instructions
 
 
 class DedupTests(unittest.IsolatedAsyncioTestCase):
-    async def test_allergy_warning_exactly_once_preserves_dish_and_name_four_languages(self):
+    async def test_allergy_warning_exactly_once_preserves_dish_and_removes_name_four_languages(self):
         examples = {
             'en': ("I have an allergy", "Hummus has no nuts, but contains tahini (sesame paste).", "May I have your name?", "Cross‑contact is possible. Our team can call you back."),
             'fr': ("Je suis allergique", "Le hummus contient du tahini (pâte de sésame), pas de noix.", "Quel est votre nom ?", "Une contamination croisée est possible. L'équipe peut vous rappeler."),
@@ -20,7 +20,7 @@ class DedupTests(unittest.IsolatedAsyncioTestCase):
                 provider = SimpleNamespace(complete=AsyncMock(return_value=ChatCompletionMessage(role='assistant',content=raw)))
                 bot = Assistant(provider, dry_run=True)
                 reply = await bot.reply(question)
-                self.assertEqual(reply, SAFETY[lang] + '\n\n' + dish + '\n' + name)
+                self.assertEqual(reply, dish + '\n\n' + SAFETY[lang] + '\n\n' + CALLBACK_OFFER[lang])
                 self.assertEqual(reply.count(SAFETY[lang]), 1)
                 self.assertEqual(reply.count(dish), 1)
                 self.assertEqual(bot.history[-1]['content'], reply)

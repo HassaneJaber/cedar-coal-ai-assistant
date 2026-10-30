@@ -71,6 +71,7 @@ class Tests(unittest.IsolatedAsyncioTestCase):
     async def test_handoff_and_deduplication(self):
         with tempfile.TemporaryDirectory() as directory:
             bot = Assistant(None, Storage(directory, local_only=True))
+            bot.allergy_callback_consent = True
             values = dict(name="Demo", phone="70000002", reason="Severe allergy")
             self.assertTrue(bot.execute("request_handoff", values)["ok"])
             self.assertTrue(bot.execute("request_handoff", values)["already_saved"])
@@ -228,7 +229,7 @@ class Tests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(bot.button_labels(),("Confirm","Cancel"))
         bot.language = "ar"
         arabic = bot.notice()
-        self.assertIn("الجمعة ٣٠ تشرين الأول",arabic)
+        self.assertIn("الجمعة 30/10",arabic)
         self.assertIn("٧:٠٠ مساءً",arabic)
         self.assertNotIn("terrace",arabic)
         self.assertEqual(bot.button_labels(),("تأكيد","إلغاء"))

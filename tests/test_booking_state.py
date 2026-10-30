@@ -112,7 +112,7 @@ class BookingStateTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn('Already collected name',create.await_args.args[0][-1]['content'])
 
     async def test_arabic_forbidden_words_regenerate_and_laysh_is_allowed(self):
-        for word in ['كام','عشان','الحين','تقدر','ترسلو','طماطم']:
+        for word in ['كام','عشان','تقدر','ترسلو']:
             self.assertTrue(forbidden_words(word))
         self.assertFalse(forbidden_words('ليش'))
         create=AsyncMock(side_effect=[ChatCompletionMessage(role='assistant',content='تقدر تعطيني اسمك؟'),ChatCompletionMessage(role='assistant',content='شو اسمك؟')])

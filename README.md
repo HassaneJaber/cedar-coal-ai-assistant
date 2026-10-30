@@ -2,13 +2,13 @@
 
 A multilingual chat assistant for a fictional Lebanese restaurant in Beirut. Built as a portfolio demo of restaurant FAQs, structured booking collection and confirmation-gated storage.
 
-**Live demo:** [Coming soon — Render deployment](#live-demo)
+**Live demo:** [Open the live demo](https://cedar-coal-demo.onrender.com)
 
 ## What the demo does
 
 - Answers menu, opening-hours and delivery questions in English, Lebanese Arabic, Arabizi and French, using a restaurant reference file.
 - Collects booking details one field at a time, retains corrections, shows a localized review and saves only after confirmation.
-- Adds localized allergy and cross-contact notices. It cannot guarantee that a dish is safe for an allergy.
+- Answers allergy questions, adds a localized safety notice, then offers a callback. Name and phone are collected only after acceptance. It cannot guarantee that a dish is safe for an allergy.
 - Routes groups of 11 or more toward a callback request rather than accepting an online booking.
 - Records complaint and callback requests. It does not notify real staff or check real table availability.
 
@@ -16,7 +16,7 @@ This is a fictional demo: bookings do not reserve a real table. Use made-up cont
 
 ## Live demo
 
-Deployment URL will be added here after the Render service is live.
+https://cedar-coal-demo.onrender.com — deployed on Render from main.
 
 ## Screenshots
 

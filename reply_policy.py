@@ -17,10 +17,16 @@ def is_dietary(text):
 
 
 SAFETY = {
-    "en": "Our kitchen handles nuts, gluten, dairy and sesame. Cross-contact cannot be ruled out, so we cannot guarantee any dish is safe. The team can call you back before you order.",
-    "fr": "Notre cuisine utilise des noix, du gluten, des produits laitiers et du sésame. Un contact croisé ne peut pas être exclu, donc nous ne pouvons garantir qu'un plat est sans danger. L'équipe peut vous rappeler avant votre commande.",
-    "ar": "مطبخنا بيتعامل مع المكسرات والغلوتين والحليب ومشتقاته والسمسم. ما فينا نستبعد التلامس بين المكونات، وما فينا نضمن إنو أي طبق آمن. الفريق فيه يتصل فيك قبل ما تطلب.",
-    "az": "Bel matbakh fi nuts, gluten, 7alib w mecht2ato w semsom. Ma fina nesteb3ed cross-contamination, w ma fina nodman ennu ay taba2 safe. El team fiyo ye7kik abel ma totlob.",
+    "en": "Just so you know, our kitchen uses nuts, gluten, dairy and sesame, so we can't guarantee any dish is 100% free of traces.",
+    "fr": "Petite précision : notre cuisine utilise des noix, du gluten, des produits laitiers et du sésame, donc on ne peut pas garantir à 100 % qu'un plat soit sans traces.",
+    "ar": "للتوضيح، بالمطبخ عنا مكسرات، غلوتين، حليب وسمسم، فما فينا نضمن ١٠٠٪ إنو ما في آثار منهن.",
+    "az": "Bas lal ma3loumet, bel matbakh fi mkasarat, gluten, 7alib w sesame, fa ma fina nadmanlak 100% ennu ma fi atar.",
+}
+CALLBACK_OFFER = {
+    "en": "Would you like our team to call you to talk it through before you order?",
+    "fr": "Voulez-vous que l'équipe vous rappelle pour en parler avant de commander ?",
+    "ar": "بتحب الفريق يتصل فيك تحكوا قبل ما تطلب؟",
+    "az": "Baddak el team yetsalo fik abel ma totlob?",
 }
 CROSS_CONTACT = {
     "en": "Cross-contact in our kitchen cannot be ruled out.",
@@ -51,11 +57,12 @@ def is_menu_category(user):
 
 def turn_instructions(user):
     if is_allergy(user):
-        return ("ALLERGY TURN: The application will automatically prepend the complete localized safety statement. "
+        return ("ALLERGY TURN: Briefly answer ONLY the specific dish question using reference ingredient facts. "
+                "The application will append the fixed safety line and a callback OFFER as a question, in that order. "
                 "Do NOT write kitchen-allergen warnings, cross-contact statements, safety guarantees or callback offers yourself. "
-                "Only briefly answer the specific dish question using reference ingredient facts, then ask only for the name "
-                "(or the next missing contact field if the name was already supplied). Ingredient facts about the asked dish "
-                "are allowed, e.g. hummus has no nuts but contains tahini (sesame paste). Never guarantee safety.")
+                "Do NOT ask for name, phone or contact details, or call booking/contact tools. "
+                "Callback collection starts ONLY after the customer accepts the offer in a later turn. "
+                "Ingredient facts about the asked dish are allowed, e.g. hummus has no nuts but contains tahini (sesame paste). Never guarantee safety.")
     instructions = []
     if is_dietary(user):
         instructions.append("DIETARY TURN: The application will automatically append ONE localized cross-contact line. "
@@ -76,7 +83,7 @@ WARNING_PATTERNS = (
     r"\b(?:guarantee\w*|garanti\w*|nodman|nadman|nkoun akidin)\b|نضمن|ضمان",
     r"\b(?:allergens?|allergenes?)\b|مسببات الحساسية",
     r"\b(?:kitchen|cuisine|matbakh)\b.{0,200}(?:nuts|gluten|dairy|milk|sesame|noix|lait|7alib|semsom|mkassarat)|مطبخ.{0,200}(?:مكسرات|غلوتين|جلوتين|حليب|سمسم)",
-    r"\b(?:call\s+(?:you\s+)?back|callback|rappeler|rappelera|ye7kik|bya7kik|yettesel)\b|(?:الفريق|فريقنا).{0,60}(?:يتصل|يحكيك|يتواصل)",
+    r"\b(?:call\s+(?:you\s+)?back|callback|rappeler|rappelera|rappelle|ye7kik|bya7kik|yettesel|yetsalo)\b|(?:الفريق|فريقنا).{0,60}(?:يتصل|يحكيك|يتواصل)",
     r"(?:100\s*%|completely|totally|entirely)\s+safe|sans aucun risque|امن تماما|مضمون.{0,20}امن",
 )
 
@@ -140,10 +147,14 @@ def short_category_list(reply, language):
 
 
 def finalize_reply(user, reply, language):
-    reply = plain_text(reply)
+    reply = local_wording(plain_text(reply), language)
     if is_allergy(user):
-        body = remove_safety_sentences(reply) or NAME_QUESTION[language]
-        return SAFETY[language] + "\n\n" + body
+        # Remove exact fixed text first for idempotence, then generic model warnings.
+        for fixed in (*SAFETY.values(), *CALLBACK_OFFER.values()):
+            reply = reply.replace(fixed, "")
+        body = remove_safety_sentences(reply)
+        body = remove_contact_requests(body)
+        return "\n\n".join(part for part in (body, SAFETY[language], CALLBACK_OFFER[language]) if part)
     dietary = is_dietary(user)
     if dietary:
         reply = remove_safety_sentences(reply)
@@ -151,4 +162,48 @@ def finalize_reply(user, reply, language):
         reply = short_category_list(reply, language)
     if dietary:
         return (reply + "\n\n" if reply else "") + CROSS_CONTACT[language]
+    return reply
+
+
+def remove_contact_requests(reply):
+    from booking_state import asked_fields
+    kept = []
+    for sentence in re.split(r'(?<=[.!?؟])\s+|\n+', reply):
+        if asked_fields(sentence) & {'name','phone'}:
+            continue
+        if re.search(r"\b(?:your (?:name|phone|contact)|vos coordonnees|votre (?:nom|numero)|esmak|ra2m)\b|اسمك|رقم.*(?:تلفون|هاتف)", normalized(sentence)):
+            continue
+        if sentence.strip():
+            kept.append(sentence.strip())
+    return '\n'.join(kept)
+
+
+MONTH_NAMES = "January February March April May June July August September October November December".split()
+ARABIC_MONTHS = ["كانون الثاني","شباط","آذار","نيسان","أيار","حزيران","تموز","آب","أيلول","تشرين الأول","تشرين الثاني","كانون الأول"]
+ARABIZI_MONTHS = ["Kenoun tene","Chbat","Azar","Nisan","Ayyar","Hzayran","Tammouz","Ab","Ayloul","Teshreen awwal","Teshreen tene","Kenoun awwal"]
+
+
+def local_wording(reply, language):
+    replacements = {
+        'ar': {'طماطم':'بندورة','ثوم':'توم','مخلل':'كبيس','الحين':'هلّق'},
+        'az': {'ghir':'gher','kharej men Beirut':'bara Beirut','ma fi wala shi':'ma fi shi'},
+    }.get(language,{})
+    for original, replacement in replacements.items():
+        reply = re.sub(r'(?<!\w)'+re.escape(original)+r'(?!\w)', replacement, reply, flags=re.I)
+    if language == 'az':
+        for original, replacement in zip(ARABIZI_MONTHS, MONTH_NAMES):
+            pattern = re.escape(original)
+            reply = re.sub(r'(?<!\w)(\d{1,2}\s+)'+pattern+r'(?!\w)', lambda m: m[1]+replacement,reply,flags=re.I)
+            reply = re.sub(r'(?<!\w)'+pattern+r'(\s+\d{1,2})(?!\w)', lambda m: replacement+m[1],reply,flags=re.I)
+            reply = re.sub(r'(?<!\w)(month\s+|shaher\s+|bel\s+|bi\s+)'+pattern+r'(?!\w)', lambda m: m[1]+replacement,reply,flags=re.I)
+    elif language == 'ar':
+        from booking_state import ascii_digits
+        # Day/month format in Arabic replies, including Arabic-Indic input digits.
+        for month, aliases in enumerate(zip(ARABIC_MONTHS, MONTH_NAMES),1):
+            pattern = '(?:'+'|'.join(re.escape(alias) for alias in aliases)+')'
+            reply = re.sub(r'(?<!\w)(\d{1,2})\s+'+pattern+r'(?!\w)',
+                           lambda m: ascii_digits(m[1])+'/'+str(month),reply,flags=re.I)
+            reply = re.sub(r'(?<!\w)'+pattern+r'\s+(\d{1,2})(?!\w)',
+                           lambda m: ascii_digits(m[1])+'/'+str(month),reply,flags=re.I)
+            reply = re.sub(r'(?<!\w)(في\s+|بشهر\s+|شهر\s+)'+pattern+r'(?!\w)', lambda m: m[1]+str(month),reply,flags=re.I)
     return reply

@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, patch
 from openai.types.chat import ChatCompletionMessage
 from assistant import Assistant, Provider, KNOWLEDGE, ARABIZI_EXAMPLES, ARABIC_EXAMPLES, system_prompt
 from eval import judge_system_prompt
-from reply_policy import SAFETY, CROSS_CONTACT, finalize_reply, turn_instructions, is_allergy, is_dietary, plain_text
+from reply_policy import SAFETY, CALLBACK_OFFER, CROSS_CONTACT, finalize_reply, turn_instructions, is_allergy, is_dietary, plain_text
 
 
 def fake_provider(content):
@@ -26,7 +26,8 @@ class SafetyTests(unittest.IsolatedAsyncioTestCase):
                 reply = await bot.reply(question)
                 self.assertEqual(bot.language, language)
                 self.assertTrue(reply.startswith(SAFETY[language]))
-                self.assertTrue(reply.endswith(answer))
+                self.assertTrue(reply.endswith(CALLBACK_OFFER[language]))
+                self.assertNotIn(answer, reply)
                 self.assertEqual(reply.count(SAFETY[language]), 1)
                 self.assertEqual(bot.history[-1]["content"], reply)
                 self.assertEqual(bot.captured_tools, [])
@@ -36,9 +37,9 @@ class SafetyTests(unittest.IsolatedAsyncioTestCase):
         for language in SAFETY:
             with self.subTest(language=language):
                 complete = SAFETY[language] + "\n\nHummus."
-                self.assertEqual(finalize_reply("allergy", complete, language), complete)
+                self.assertEqual(finalize_reply("allergy", complete, language), "Hummus.\n\n" + SAFETY[language] + "\n\n" + CALLBACK_OFFER[language])
                 partial = CROSS_CONTACT[language] + "\nHummus."
-                self.assertTrue(finalize_reply("allergic", partial, language).startswith(SAFETY[language]))
+                self.assertEqual(finalize_reply("allergic", partial, language), "Hummus.\n\n" + SAFETY[language] + "\n\n" + CALLBACK_OFFER[language])
 
     async def test_dietary_final_replies_in_four_languages(self):
         cases = {
@@ -67,12 +68,14 @@ class SafetyTests(unittest.IsolatedAsyncioTestCase):
     async def test_safety_covers_guard_and_provider_failure_paths(self):
         bot = Assistant(None, dry_run=True)
         reply = await bot.reply("Book for 15 people; I have an allergy")
-        self.assertTrue(reply.startswith(SAFETY['en']))
+        self.assertIn(SAFETY['en'], reply)
+        self.assertTrue(reply.endswith(CALLBACK_OFFER['en']))
         self.assertIn("limited to 10", reply)
         provider = SimpleNamespace(complete=AsyncMock(side_effect=RuntimeError("Temporarily unavailable.")))
         bot = Assistant(provider, dry_run=True)
         reply = await bot.reply("I have an allergy")
-        self.assertTrue(reply.startswith(SAFETY['en']))
+        self.assertIn(SAFETY['en'], reply)
+        self.assertTrue(reply.endswith(CALLBACK_OFFER['en']))
 
     async def test_plain_text_removes_markup_and_preserves_menu_lists(self):
         raw = "## Menu\n**Mixed grill**: $22\n* Hummus\n- Moutabal\n__Details__: `portion`"
@@ -96,7 +99,7 @@ class SafetyTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn("Tabbouleh, fattoush, kibbeh, sambousek and fatayer contain gluten", prompt)
         self.assertIn("ALWAYS include", prompt)
         self.assertIn("NEVER offer a callback for unrelated topics", prompt)
-        self.assertEqual(ARABIZI_EXAMPLES.count("Q:"), 7)
+        self.assertEqual(ARABIZI_EXAMPLES.count("Q:"), 8)
         self.assertNotRegex(SAFETY['az'] + CROSS_CONTACT['az'], r"[\u0600-\u06ff]")
 
     async def test_medium_default_explicit_effort_and_judge_grounding(self):
