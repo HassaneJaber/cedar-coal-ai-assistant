@@ -1,0 +1,17 @@
+.venv
+.git
+.env
+data/*
+**/__pycache__
+*.log
+service-account*.json
+.files
+.chainlit/translations
+
+.env.*
+!.env.example
+**/*.pyc
+tests
+docs
+*.zip
+Claude-project-summary.txt

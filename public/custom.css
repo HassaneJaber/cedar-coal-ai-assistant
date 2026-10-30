@@ -1,0 +1,4 @@
+:root { --font-sans: "Segoe UI", Tahoma, sans-serif; }
+body { background: radial-gradient(ellipse at top, #20352c 0, #111a16 60%); }
+#chainlit-copilot { font-family: "Segoe UI", Tahoma, sans-serif; }
+button { border-radius: 12px; }

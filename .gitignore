@@ -1,0 +1,24 @@
+.venv/
+.env
+__pycache__/
+*.pyc
+data/*.csv
+data/*.lock
+.chainlit/translations/
+.chainlit/.cache/
+.files/
+*.log
+service-account*.json
+
+# Local evaluation output and private handoffs
+.env.*
+!.env.example
+tests/*results*.json
+tests/*results*.md
+tests/*_eval_runs.json
+tests/available_models.json
+tests/verification.md
+docs/booking-previews.md
+docs/booking-proof.png
+Claude-project-summary.txt
+*.zip

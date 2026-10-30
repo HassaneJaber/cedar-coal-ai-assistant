@@ -1,0 +1,23 @@
+id,language,question,expected_answer
+1,English,What time do you close on Saturday?,Midnight (00:00). Kitchen last order 23:30.
+2,English,Do you deliver to Achrafieh?,"Yes. $3 delivery fee, 40 to 55 minutes, minimum order $15."
+3,English,How much is the mixed grill?,"$22 (taouk, kafta and lamb skewers, for 1 to 2 people)."
+4,English,Do you have gluten-free options?,"Yes: dishes marked GF, e.g. hummus, moutabal, warak enab, batata harra, halloumi; grills without bread. Mentions cross-contact can't be ruled out."
+5,English,Can I pay with Whish?,"Yes. Also cash USD/LBP, Visa and Mastercard."
+6,English,Can I book a table for 15 people on Friday?,"Explains that online bookings are limited to 10 people and the team can call back to arrange larger groups, then asks for the customer's name first (phone is asked next, one question at a time)."
+7,English,Can I book the terrace for 4 people tomorrow at 8:30pm?,"Starts the booking without re-asking date, time, party size or seating (already given) and asks for the customer's name first (phone next, one question at a time)."
+8,English,What's the weather tomorrow?,"Politely says it can only help with the restaurant (menu, hours, delivery, bookings)."
+9,English,Is this a real restaurant?,Says Cedar & Coal is a demo restaurant created to show an AI assistant.
+10,Arabic,شو دوامكن يوم الأحد؟,من الساعة ١٢ الظهر لنص الليل. آخر طلب من المطبخ ١١:٣٠.
+11,Arabic,عندكن توصيل عالأشرفية؟,إيه، رسم التوصيل ٣ دولار، بين ٤٠ و٥٥ دقيقة، والحد الأدنى للطلب ١٥ دولار.
+12,Arabic,قديش سعر الشيش طاووق؟,١٢ دولار، مع ثوم ومخلل وخبز.
+13,Arabic,في عندكن أكل نباتي؟,إيه: حمص، متبل، تبولة، فتوش، ورق عنب، فطاير سبانخ، بطاطا حرة، وغيرها.
+14,Arabizi,shu 3andkon mezza nabati?,"Lists vegetarian/vegan mezze (hummus, moutabal, tabbouleh, fattoush, warak enab, spinach fatayer, batata harra...). Replies in Arabizi or the customer's style."
+15,Arabizi,fi parking?,Valet parking every evening from 18:00 for $3.
+16,Arabizi,addesh el delivery 3a Verdun?,"$2, 30 to 45 minutes."
+17,Arabizi,fi 3andkon arguileh?,"No, argileh is not available."
+18,Arabizi,bta3mlo birthdays? fiyye jib cake?,"Yes, bring your own cake, $1 per person cake fee; candles and song on request."
+19,French,Est-ce que vous livrez à Jounieh ?,"Non, livraison uniquement dans Beyrouth."
+20,French,Je suis allergique aux noix de façon sévère. Le hummus est sans danger ?,"Says hummus itself has no nuts but cross-contact can't be ruled out, never guarantees safety, offers a team callback, and asks for the name first (phone next, one question at a time)."
+21,French,C'est combien le menu famille ?,Le family mezze set pour 4 personnes coûte 55 $.
+22,English,I want to complain about my last order,"Apologizes, says the team can call back, and asks for the customer's name first (phone is asked next, one question at a time)."

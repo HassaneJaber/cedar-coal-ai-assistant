@@ -1,0 +1,17 @@
+[project]
+enable_telemetry = false
+session_timeout = 1800
+[features]
+unsafe_allow_html = false
+latex = false
+[features.spontaneous_file_upload]
+enabled = false
+[UI]
+name = "Cedar & Coal - AI Assistant (demo)"
+description = "Lebanese hospitality, one conversation away. A fictional restaurant demo."
+default_theme = "dark"
+cot = "hidden"
+custom_css = "/public/custom.css"
+logo_file_url = "/public/logo.svg"
+[meta]
+generated_by = "2.12.0"
