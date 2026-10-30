@@ -18,6 +18,6 @@ id,language,question,expected_answer
 17,Arabizi,fi 3andkon arguileh?,"No, argileh is not available."
 18,Arabizi,bta3mlo birthdays? fiyye jib cake?,"Yes, bring your own cake, $1 per person cake fee; candles and song on request."
 19,French,Est-ce que vous livrez à Jounieh ?,"Non, livraison uniquement dans Beyrouth."
-20,French,Je suis allergique aux noix de façon sévère. Le hummus est sans danger ?,"Says hummus itself has no nuts but cross-contact can't be ruled out, never guarantees safety, offers a team callback, and asks for the name first (phone next, one question at a time)."
+20,French,Je suis allergique aux noix de façon sévère. Le hummus est sans danger ?,"Says hummus has no nuts but contains sesame, gives the safety line about nuts/gluten/dairy/sesame traces, never guarantees safety, and OFFERS a team callback as a question without asking for the name yet."
 21,French,C'est combien le menu famille ?,Le family mezze set pour 4 personnes coûte 55 $.
 22,English,I want to complain about my last order,"Apologizes, says the team can call back, and asks for the customer's name first (phone is asked next, one question at a time)."
