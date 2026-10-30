@@ -4,3 +4,4 @@ python-dotenv==1.2.4
 gspread==6.2.1
 tzdata==2026.6
 filelock==4.2.4
+phonenumbers==9.0.42

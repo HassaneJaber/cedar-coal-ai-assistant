@@ -3,6 +3,7 @@ import re
 import unicodedata
 from datetime import datetime, timedelta
 from booking_guard import NUMBER_WORDS, normalize
+from phone_utils import normalize_phone, is_phone_input, compact_phone, PHONE_ERRORS
 
 FIELDS = ('name','phone','date','time','party_size','seating','notes')
 REQUIRED = FIELDS[:-1]
@@ -125,11 +126,7 @@ def update_draft(draft,values,current,knowledge,old_errors=None):
                     raise ValueError('Please supply a valid name.')
                 value = value.strip()
             elif field == 'phone':
-                if not isinstance(value,str):
-                    raise ValueError('Please supply a valid phone number.')
-                value = ascii_digits(value).strip()
-                if not re.fullmatch(r'[+\d ()-]{7,30}',value) or not 7 <= len(re.sub(r'\D','',value)) <= 15:
-                    raise ValueError('Please supply a valid phone number.')
+                value = normalize_phone(value)
             elif field == 'date':
                 value = resolve_date(value,current)
             elif field == 'time':
@@ -177,7 +174,8 @@ def extract_details(user,draft,current):
     raw = ascii_digits(user).strip()
     text = normalize(raw)
     result = {}
-    if re.fullmatch(r'\+?[\d ()-]{7,30}',raw) and 7 <= len(re.sub(r'\D','',raw)) <= 15 and not re.fullmatch(r'\d{4}-\d\d-\d\d',raw):
+    if (is_phone_input(raw) and not re.fullmatch(r'\d{4}-\d\d-\d\d',raw)
+            and (len(compact_phone(raw).lstrip('+')) >= 6 or next_field(draft,{}) == 'phone')):
         result['phone']=raw
         return result
     date_match = re.search(r'\b\d{4}-\d{2}-\d{2}\b',raw)
@@ -250,6 +248,8 @@ def reply_issues(reply,language,draft,errors):
 
 
 def safe_reply(language,draft,errors):
+    if 'phone' in errors:
+        return PHONE_ERRORS[language]
     field=next_field(draft,errors)
     if field:
         return QUESTIONS[language][REQUIRED.index(field)]

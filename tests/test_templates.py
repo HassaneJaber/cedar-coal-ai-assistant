@@ -6,6 +6,7 @@ from pathlib import Path
 from openai.types.chat import ChatCompletionMessage
 from assistant import Assistant, now
 from booking_state import REQUIRED
+from phone_utils import PHONE_ERRORS
 
 EXPECTED = {
     "en": ["What's your name?", "What's your phone number?", "Which day would you like to come?", "What time?", "How many people?", "Inside or on the terrace?"],
@@ -50,7 +51,7 @@ class TemplateTests(unittest.IsolatedAsyncioTestCase):
                 self.assertNotIn("Terrasse", review)
                 self.assertTrue(review.endswith("Mna2kid el hajez?"))
             if language == "ar":
-                self.assertIn("التلفون: 70000001", review)
+                self.assertIn("التلفون: 70 000 001", review)
                 self.assertIn("المكان: التراس", review)
                 self.assertNotIn("الهاتف", review)
                 self.assertTrue(review.endswith("منأكّد الحجز؟"))
@@ -86,12 +87,12 @@ class TemplateTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(await bot.reply("5"), EXPECTED["en"][5])
         self.assertEqual(bot.booking_draft["party_size"], 5)
 
-    async def test_invalid_field_still_has_model_context(self):
+    async def test_invalid_phone_has_fixed_retry_without_model(self):
         provider = SimpleNamespace(complete=AsyncMock(return_value=ChatCompletionMessage(role="assistant", content="Please provide a valid phone number.")))
         bot = Assistant(provider, dry_run=True)
         bot.execute("update_booking_draft", {"name":"Demo Guest","phone":"invalid"})
-        await bot.reply("ok")
-        provider.complete.assert_awaited_once()
+        self.assertEqual(await bot.reply("ok"), PHONE_ERRORS["en"])
+        provider.complete.assert_not_awaited()
         self.assertIn("phone", bot.draft_errors)
 
     def test_arabic_welcome(self):

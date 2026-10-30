@@ -12,9 +12,10 @@ from zoneinfo import ZoneInfo
 from dotenv import load_dotenv
 from openai import AsyncOpenAI, APIConnectionError, APIStatusError, RateLimitError
 from storage import Storage
+from phone_utils import normalize_phone, national_phone, PhoneValidationError, PHONE_ERRORS, is_phone_input
 from booking_guard import is_large_group_booking, LARGE_GROUP_REPLIES
 from reply_policy import finalize_reply, is_allergy, is_dietary, turn_instructions, local_wording
-from booking_state import (FIELDS, LANGUAGE, update_draft, missing_fields, extract_details, detect_language, booking_intent, reply_issues, safe_reply, arabic_script, routine_booking_turn, fixed_field_question, QUESTIONS)
+from booking_state import (FIELDS, LANGUAGE, update_draft, missing_fields, extract_details, detect_language, booking_intent, reply_issues, safe_reply, arabic_script, routine_booking_turn, fixed_field_question, QUESTIONS, asked_fields)
 
 ROOT = Path(__file__).resolve().parent
 load_dotenv(ROOT / ".env")
@@ -93,14 +94,13 @@ def system_prompt(language_instruction, user=""):
 
 
 def validate_contact(values):
-    for field in ("name", "phone"):
-        if not isinstance(values.get(field), str) or not values[field].strip():
-            raise ValueError(f"Please supply {field}.")
-    if len(values["name"]) > 100 or not re.fullmatch(r"[+\d ()-]{7,30}", values["phone"]) or not 7 <= len(re.sub(r"\D", "", values["phone"])) <= 15:
-        raise ValueError("Please supply a valid name and phone number.")
+    if not isinstance(values.get("name"),str) or not values["name"].strip() or len(values["name"]) > 100:
+        raise ValueError("Please supply a valid name.")
+    return {**values, "name":values["name"].strip(), "phone":normalize_phone(values.get("phone"))}
+
 
 def validate_booking(values, current=None):
-    validate_contact(values)
+    values = validate_contact(values)
     current = current or now()
     size = values.get("party_size")
     if type(size) is not int or not 1 <= size <= 10:
@@ -294,6 +294,8 @@ class Assistant:
             if name == "update_booking_draft":
                 result = self.update_booking_draft(values)
             elif name == "save_booking":
+                if "phone" in values:
+                    values = {**values, "phone":normalize_phone(values["phone"])}
                 if not self.booking_in_progress:
                     validate_booking(values)
                     self.update_booking_draft(values)
@@ -306,12 +308,16 @@ class Assistant:
                 result = {"status": "awaiting_confirmation", "details": dict(self.pending),
                           "instruction": "Repeat details and ask for confirmation; nothing saved yet."}
             elif name == "request_handoff":
-                validate_contact(values)
+                values = validate_contact(values)
                 if not isinstance(values.get("reason"), str) or not 1 <= len(values["reason"].strip()) <= 1000:
                     raise ValueError("Please supply a short reason.")
                 result = self._save("Handoffs", values)
             else:
                 result = {"error": "Unknown tool."}
+        except PhoneValidationError as exc:
+            if name == "save_booking":
+                self.update_booking_draft(values)
+            result = {"error":str(exc), "field":"phone"}
         except (ValueError, TypeError) as exc:
             result = {"error": str(exc)}
         except Exception:
@@ -320,6 +326,7 @@ class Assistant:
         return result
 
     def _save(self, kind, values):
+        values = validate_contact(values)
         fingerprint = kind + json.dumps(values, sort_keys=True, ensure_ascii=False)
         if fingerprint in self.saved:
             return {"ok": True, "already_saved": True}
@@ -332,7 +339,7 @@ class Assistant:
             if not self.pending:
                 return "No booking is awaiting confirmation."
             try:
-                validate_booking(self.pending)
+                self.pending = validate_booking(self.pending)
                 result = await asyncio.to_thread(self._save, "Bookings", self.pending)
                 self.captured_tools.append({"name": "save_booking", "arguments": dict(self.pending), "result": result})
                 self.last_booking = dict(self.pending)
@@ -344,6 +351,10 @@ class Assistant:
                 self.history.append({"role": "assistant", "content": reply})
                 self.history = self.history[-20:]
                 return reply
+            except PhoneValidationError:
+                self.pending = None
+                self.draft_errors["phone"] = "Please supply a valid phone number."
+                return PHONE_ERRORS[self.language]
             except ValueError as exc:
                 self.pending = None
                 return str(exc)
@@ -384,6 +395,7 @@ class Assistant:
             "az": "January February March April May June July August September October November December".split(),
         }[self.language]
         values = dict(self.pending)
+        values["phone"] = national_phone(values["phone"])
         day = datetime.fromisoformat(values["date"])
         values["date"] = (f"{weekdays[day.weekday()]} {day.day}/{day.month}" if self.language == "ar" else f"{weekdays[day.weekday()]} {day.day} {months[day.month-1]}")
         hour, minute = map(int, values["time"].split(":"))
@@ -456,6 +468,8 @@ class Assistant:
             self._callback_dismissed = True
             return None
         accepted, errors = update_draft(self.allergy_callback,values,now(),KNOWLEDGE)
+        if "phone" in errors:
+            return PHONE_ERRORS[self.language]
         if errors or not all(self.allergy_callback.get(field) for field in ("name","phone")):
             return QUESTIONS[self.language][0 if not self.allergy_callback.get("name") else 1]
         result = await asyncio.to_thread(self.execute, "request_handoff",
@@ -502,6 +516,14 @@ class Assistant:
             if callback_reply is not None:
                 self.history.append({"role":"assistant","content":callback_reply})
                 return callback_reply
+            previous_reply = self.history[-2].get("content","") if len(self.history) > 1 and self.history[-2]["role"] == "assistant" else ""
+            if not self.booking_in_progress and ("phone" in asked_fields(previous_reply) or previous_reply in PHONE_ERRORS.values()) and is_phone_input(user):
+                try:
+                    normalize_phone(user)
+                except PhoneValidationError:
+                    reply = PHONE_ERRORS[self.language]
+                    self.history.append({"role":"assistant","content":reply})
+                    return reply
             if is_large_group_booking(user):
                 reply = LARGE_GROUP_REPLIES[self.language]
                 self.history.append({"role":"assistant","content":reply})
@@ -529,6 +551,10 @@ class Assistant:
                 self.pending = None
                 if re.search(r"change|actually|instead|correction|غير|بدل",user,re.I):
                     self.draft_errors["change"] = "Ask which detail should change; do not discard collected fields."
+            if self.booking_in_progress and "phone" in self.draft_errors and not is_allergy(user) and (details or routine_booking_turn(user,details)):
+                reply = PHONE_ERRORS[self.language]
+                self.history.append({"role":"assistant","content":reply})
+                return reply
             if (self.booking_in_progress and not self.pending and not self.draft_errors
                     and missing_fields(self.booking_draft) and routine_booking_turn(user, details)
                     and not is_allergy(user) and not is_dietary(user)):
@@ -555,6 +581,7 @@ class Assistant:
                     response = await self.provider.complete(messages, TOOLS)
                     if response.tool_calls:
                         messages.append(response.model_dump(include={"role","content","tool_calls"},exclude_none=True))
+                        phone_error = False
                         for call in response.tool_calls:
                             try:
                                 values = json.loads(call.function.arguments)
@@ -562,6 +589,12 @@ class Assistant:
                             except (ValueError,TypeError):
                                 result = {"error":"Invalid JSON arguments."}
                             messages.append({"role":"tool","tool_call_id":call.id,"content":json.dumps(result,ensure_ascii=False)})
+                            if result.get("field") == "phone" or "phone" in result.get("errors",{}):
+                                phone_error = True
+                                break
+                        if phone_error:
+                            reply = PHONE_ERRORS[self.language]
+                            break
                         if self.booking_in_progress and not missing_fields(self.booking_draft) and not self.draft_errors and self.pending is None:
                             self.execute("save_booking",dict(self.booking_draft))
                         if self.pending is not None:

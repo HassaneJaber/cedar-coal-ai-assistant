@@ -10,9 +10,9 @@ from storage import Storage, safe_cell
 
 SCENARIOS = [
     {'id':'a','language':'az','turns':['badde e7joz tawle la 3 bokra 3al 9','Karim','70000001','khames ashkhas','terrace','eh tamam'],
-     'expected':{'name':'Karim','phone':'70000001','party_size':5,'time':'21:00','seating':'terrace'},'day':'tomorrow'},
+     'expected':{'name':'Karim','phone':'+96170000001','party_size':5,'time':'21:00','seating':'terrace'},'day':'tomorrow'},
     {'id':'b','language':'ar','turns':['بدي احجز ٢ يوم السبت الساعة ٨ عالتراس','سامي','70000002','لا خليهن ٤','أكيد'],
-     'expected':{'name':'سامي','phone':'70000002','party_size':4,'time':'20:00','seating':'terrace'},'day':'saturday'},
+     'expected':{'name':'سامي','phone':'+96170000002','party_size':4,'time':'20:00','seating':'terrace'},'day':'saturday'},
     {'id':'c','language':'en','turns':['table for 2 tomorrow at 8pm inside','Maya','+96171111111','actually make it terrace','yes please'],
      'expected':{'name':'Maya','phone':'+96171111111','party_size':2,'time':'20:00','seating':'terrace'},'day':'tomorrow'},
 ]

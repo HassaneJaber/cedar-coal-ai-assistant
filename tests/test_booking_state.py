@@ -63,7 +63,7 @@ class BookingStateTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result['draft']['time'],'21:00')
         self.assertEqual(result['draft']['name'],'Karim')
         bot.execute('update_booking_draft',{'phone':'invalid'})
-        self.assertEqual(bot.booking_draft['phone'],'70000001')
+        self.assertEqual(bot.booking_draft['phone'],'+96170000001')
         self.assertIn('error',bot.execute('save_booking',dict(bot.booking_draft)))
 
     async def test_date_change_revalidates_kitchen_cutoff(self):

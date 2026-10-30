@@ -9,7 +9,8 @@ from openai.types.chat import ChatCompletionMessage
 from assistant import Assistant, system_prompt
 from booking_state import QUESTIONS, LANGUAGE
 from reply_policy import SAFETY, CALLBACK_OFFER, finalize_reply, local_wording
-from storage import Storage
+from storage import Storage, safe_cell
+from phone_utils import PHONE_ERRORS
 
 CASES = {
     'en': ("I'm allergic to nuts. Is hummus safe?", "Hummus has no nuts but contains sesame.", "yes please"),
@@ -37,7 +38,7 @@ class AllergyConsentTests(unittest.IsolatedAsyncioTestCase):
                 with (Path(directory)/'handoffs.csv').open(encoding='utf-8-sig',newline='') as stream:
                     rows=list(csv.DictReader(stream))
                 self.assertEqual(len(rows),1)
-                self.assertEqual(rows[0]['phone'],'70000001')
+                self.assertEqual(rows[0]['phone'],safe_cell('+96170000001'))
                 self.assertTrue(any(t['name']=='request_handoff' and t['result'].get('ok') for t in bot.captured_tools))
                 provider.complete.assert_awaited_once()
                 self.assertIsNone(bot.allergy_callback)
@@ -101,7 +102,7 @@ class AllergyConsentTests(unittest.IsolatedAsyncioTestCase):
         bot.allergy_offer_pending=True
         await bot.reply('yes')
         await bot.reply('Demo Guest')
-        self.assertEqual(await bot.reply('123'),QUESTIONS['en'][1])
+        self.assertEqual(await bot.reply('123'),PHONE_ERRORS['en'])
         self.assertFalse(bot.saved)
         await bot.reply('cancel')
         self.assertIsNone(bot.allergy_callback)

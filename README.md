@@ -8,6 +8,8 @@ A multilingual chat assistant for a fictional Lebanese restaurant in Beirut. Bui
 
 - Answers menu, opening-hours and delivery questions in English, Lebanese Arabic, Arabizi and French, using a restaurant reference file.
 - Collects booking details one field at a time, retains corrections, shows a localized review and saves only after confirmation.
+- Validates Lebanese and international contact numbers with phonenumbers. Arabic-Indic digits and common separators are accepted; records use E.164 and booking cards use national formatting. Library validity does not verify ownership or reachability.
+- Demo phone fixtures (for example 70000001) are synthetic test inputs; no calls are placed.
 - Answers allergy questions, adds a localized safety notice, then offers a callback. Name and phone are collected only after acceptance. It cannot guarantee that a dish is safe for an allergy.
 - Routes groups of 11 or more toward a callback request rather than accepting an online booking.
 - Records complaint and callback requests. It does not notify real staff or check real table availability.
@@ -24,7 +26,7 @@ Screenshots will be added after deployment: the multilingual welcome screen, a b
 
 ## Tech stack
 
-Python 3.11, Chainlit, the OpenAI Python SDK with Groq's compatible API, python-dotenv, filelock, local CSV storage, and Docker. An optional Google Sheets adapter is included; the initial Render deployment uses CSV.
+Python 3.11, Chainlit, phonenumbers, the OpenAI Python SDK with Groq's compatible API, python-dotenv, filelock, local CSV storage, and Docker. An optional Google Sheets adapter is included; the initial Render deployment uses CSV.
 
 The main model is openai/gpt-oss-120b with medium reasoning effort and a 600-token completion cap. A configured qwen/qwen3.8-27b fallback handles daily-quota errors; per-minute limits retry with backoff. Model availability and quotas depend on the provider.
 

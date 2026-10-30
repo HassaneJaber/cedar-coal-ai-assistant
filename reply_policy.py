@@ -20,13 +20,13 @@ SAFETY = {
     "en": "Just so you know, our kitchen uses nuts, gluten, dairy and sesame, so we can't guarantee any dish is 100% free of traces.",
     "fr": "Petite précision : notre cuisine utilise des noix, du gluten, des produits laitiers et du sésame, donc on ne peut pas garantir à 100 % qu'un plat soit sans traces.",
     "ar": "للتوضيح، بالمطبخ عنا مكسرات، غلوتين، حليب وسمسم، فما فينا نضمن ١٠٠٪ إنو ما في آثار منهن.",
-    "az": "Bas lal ma3loumet, bel matbakh fi mkasarat, gluten, 7alib w sesame, fa ma fina nadmanlak 100% ennu ma fi atar.",
+    "az": "Bas lal ma3loumet, bel matbakh fi mkasarat, gluten, 7alib w sesame, fa ma fina nadmanlak 100% ennu ma ela 3awared.",
 }
 CALLBACK_OFFER = {
     "en": "Would you like our team to call you to talk it through before you order?",
     "fr": "Voulez-vous que l'équipe vous rappelle pour en parler avant de commander ?",
     "ar": "بتحب الفريق يتصل فيك تحكوا قبل ما تطلب؟",
-    "az": "Baddak el team yetsalo fik abel ma totlob?",
+    "az": "Baddak el team yotoslo fik abel ma totlob?",
 }
 CROSS_CONTACT = {
     "en": "Cross-contact in our kitchen cannot be ruled out.",
@@ -83,7 +83,7 @@ WARNING_PATTERNS = (
     r"\b(?:guarantee\w*|garanti\w*|nodman|nadman|nkoun akidin)\b|نضمن|ضمان",
     r"\b(?:allergens?|allergenes?)\b|مسببات الحساسية",
     r"\b(?:kitchen|cuisine|matbakh)\b.{0,200}(?:nuts|gluten|dairy|milk|sesame|noix|lait|7alib|semsom|mkassarat)|مطبخ.{0,200}(?:مكسرات|غلوتين|جلوتين|حليب|سمسم)",
-    r"\b(?:call\s+(?:you\s+)?back|callback|rappeler|rappelera|rappelle|ye7kik|bya7kik|yettesel|yetsalo)\b|(?:الفريق|فريقنا).{0,60}(?:يتصل|يحكيك|يتواصل)",
+    r"\b(?:call\s+(?:you\s+)?back|callback|rappeler|rappelera|rappelle|ye7kik|bya7kik|yettesel|yotoslo)\b|(?:الفريق|فريقنا).{0,60}(?:يتصل|يحكيك|يتواصل)",
     r"(?:100\s*%|completely|totally|entirely)\s+safe|sans aucun risque|امن تماما|مضمون.{0,20}امن",
 )
 
